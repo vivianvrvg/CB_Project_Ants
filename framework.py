@@ -60,4 +60,4 @@ def found_pheromones(new_pos):
         pos -1
    # back in colony
 
-### blablabla
+### mwamwamwam
