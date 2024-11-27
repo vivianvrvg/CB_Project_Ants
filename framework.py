@@ -59,5 +59,3 @@ def found_pheromones(new_pos):
     while x,y != hive.x, hive.y:
         pos -1
    # back in colony
-
-### mwamwamwam
