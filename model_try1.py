@@ -198,7 +198,7 @@ class Ant:
                             self.arena.set_pheromone_value((new_x, new_y), max(existing_value, half_value)) # Update the pheromone value of the adjacent cell with the maximum of existing and diffused values
                                                                                                             # Compare the pher val in adjacent cell and the value diffused from the ant's current pos --> pick the max value between those as the new pheromone level
 
-####### MAIN STIMULATION #######
+####### MAIN SIMULATION #######
 results = []                                    # Create an empty list to store the results of every simulation run
 
 for run in range(runs) :
@@ -216,7 +216,7 @@ for run in range(runs) :
 for result in results:
     print(f'Run {result['run']}: Total remaining food = {result['remaining_food']}')
 
-####### MAIN STIMULATION #######
+####### GENERATE PLOT #######
 import matplotlib.pyplot as plt
 
 # Extract the data for plotting
