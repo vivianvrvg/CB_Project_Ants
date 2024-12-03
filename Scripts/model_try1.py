@@ -137,7 +137,7 @@ class Ant:
             distance = abs(c_pos[0] - x) + abs(c_pos[1] - y)    # Take absolute values of x an y positions of the colony
             if distance < min_distance:
                 min_distance = distance                     # Update minimum distance found
-                closest_colony_position = c_pos             # Update the closest colony position
+                closest_colony_position = c_pos             # Update the closest colony position, no else statement because if untrue, it doesn't need to be updated
 
         # Determine the direction to move towards the closest colony position
         direction_x = np.sign(closest_colony_position[0] - x)
@@ -169,7 +169,7 @@ class Ant:
             self.path = []                                  # Reset the path since ant will start new foraging trip
             self.position = self.random_start_position()    # Start a new search for food from random position is colony
     
-    def leave_pheromone(self):                              # Ants depositi pheromones along the return path
+    def leave_pheromone(self):                              # Ants deposits pheromones along the return path
         trail_length = len(self.path)                       # Get the total number of positions in the ant's recorded path
         if trail_length == 0 :                              # If the path is empty, there are no positions to deposit pheromones --> exit function
             return                                          # No path to deposit pheromones
@@ -185,7 +185,7 @@ class Ant:
             # Diffuse pheromones to adjacent cells at half the strength
             x, y = pos
             half_value = pheromone_value / 2
-            # Only diffuse if the diffused valye is above the minimal threshold
+            # Only diffuse if the diffused value is above the minimal threshold
             if half_value >= pheromone_min_detectable:
                 # Loop through all adjacent cells, including diagonals
                 for direction_x in [-1, 0, 1]:
