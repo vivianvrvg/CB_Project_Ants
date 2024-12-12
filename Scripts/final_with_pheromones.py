@@ -4,13 +4,6 @@
 ## Authors: Camille Timmermans, Vivian Van Reybrouck Van Gelder & Zaza Terpstra      ##
 #######################################################################################
 
-## Adaptations compared to previous model:
-##  - Added code to store the obtained dataframe in the folder of your computer
-##  - Added code to ensure that an ant cannot get stuck against the arena borders (break after if statement in random_walk)
-##  - Added code to let pheromone diffuse further at the moment of deposition
-##  - I haven't included diagonal movement (yet)
-##  - Discuss diffusion issue
-
 ## Import packages
 import numpy as np
 import pandas as pd
@@ -19,17 +12,17 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 ## Define parameters
-arena_size = 20                     # Size 16x16 => should be even since middle calculation (for colony) is based on even grid sizes 16
-colony_size = 4                     # Size 2x2
-ants = 10                           # Number of foraging ants in arena 3
+arena_size = 20                     # Size of arena => should be even since middle calculation (for colony) is based on even grid sizes
+colony_size = 4                     # Size of grid
+ants = 10                           # Number of foraging ants in arena 
 food_sources = 4                    # Number of food sources distributed throughout arena
 food_value = 25                     # Value of the food source at beginning of run
 pheromone_start = 100               # Level of pheromone when just deposited (highest level)
 pheromone_min_detectable = 25       # Below this value the ants can no longer detect the pheromone
 pheromone_max = 1000                # Maximal deposition of the pheromone
-evaporation_rate = 0.10             # Pheromone evaporation rate per step (declines by 5%) ===> CHANGE WITH EQUATION
-diffusion_distance = 2                # Cells until where the pheromone can diffuse
-runs = 100                          # Number of replicates 50
+evaporation_rate = 0.10             # Pheromone evaporation rate per step (declines by this proportion) 
+diffusion_distance = 2              # Cells until where the pheromone can diffuse
+runs = 100                          # Number of replicates
 
 
 # Build different classes which represent different agents of the model.
@@ -58,8 +51,8 @@ class Arena:
         # Randomly place the food sources in the arena 
         for i in range(food_sources):                       # For every food source (defined earlier), the while loop will be run until it finds a valid position, in which case it will assign the food value
             while True:                                     # Creates an infinite loop that will keep running until it encounters a 'break'
-                x = random.randint(0, self.arena_size - 1)  # Generate random x-coordinate ==> since indexing starts at 0, valid indices range from 0 to self.size - 1
-                y = random.randint(0, self.arena_size - 1)  # Generate random y-coordinate
+                x = random.randint(0, self.arena_size - 2)  # Generate random x-coordinate ==> since indexing starts at 0, valid indices range from 0 to self.size - 2 (avoid placing on border)
+                y = random.randint(0, self.arena_size - 2)  # Generate random y-coordinate
                 # Ensure that food source is not randomly placed in the colony area or on another food source
                 if (x,y) not in self.colony_area and (x,y) not in self.food_sources:
                     self.food_sources[(x,y)] = self.food_value
@@ -217,12 +210,14 @@ class Ant:
 
 
 ####### MAIN SIMULATION #######
-results = []                                    # Create an empty list to store the results of every simulation run
+results = []                                    # Create an empty list to store the results of every simulation run 
+food_left_all_runs = []                         # Create an empty list to store the food left after each 100 steps for every run
 
 for run in range(runs) :
     arena = Arena()                             # Initialise the arena for the current run
     ants_list = [Ant(arena) for _ in range(ants)]    # Create a list of ants, each tied to the arena
     total_steps = 0                             # Initialise the total number of steps taken
+    food_left = []                                  # Create an empty list to store the food still in the arena after each 100 steps
 
     while sum(arena.food_sources.values())> 0:         #run until all food is gone
         for ant in ants_list:                        # Loop for every ant
@@ -230,24 +225,37 @@ for run in range(runs) :
         arena.update_pheromones()               # Update the pheromone grid to stimulate evaporation
         total_steps += 1                        # Update total number of steps taken
 
+        if total_steps % 100 == 0:              # for each 100 steps in a run
+            remaining_food = sum(arena.food_sources.values())           # calculate how much food is left in the arena
+            food_left.append({'steps':total_steps, 'remaining_food': remaining_food})  # store the remaining food 
+
+    if sum(arena.food_sources.values()) == 0:  #when all the food is gone, add the last value to the food_left list
+        food_left.append({'steps': total_steps, 'remaining_food': 0})
+
+    print('run:', run)
+
     results.append({'run' : run + 1, 'total_steps': total_steps})  # Store the results
+    food_left_all_runs.append({'run': run + 1, 'food_left': food_left}) # Store the remaining food for each 100 steps for every run
 
 # Print the results of all simulation runs
 for result in results:
     print(f"Run {result['run']}: Total steps = {result['total_steps']}")
 
 # Store the dataframe as a .csv file in the current working folder
-df_pheromones = pd.DataFrame(results)
+df_pheromones = pd.DataFrame(results)           # dataframe for number of steps until all food is gone
 df_pheromones.to_csv('ant_with_pheromones.csv', index = False) # Index=F indicates that we don't want the index column as a column in the final dataset
 
+df_food_tracking = pd.DataFrame(food_left_all_runs)   # dataframe for remaing food after each 100 steps
+df_food_tracking.to_csv('food_tracking.csv', index=False)
+
 ####### GENERATE PLOT #######
-# Extract the data for plotting
+# Extract the data for plotting the amount of steps until all food was cleared
 run_nr = [result['run'] for result in results]  # Extract run numbers from the results
 total_steps = [result['total_steps'] for result in results]  # Extract remaining food values
 
 plt.figure(figsize=(8, 6))  # Set the figure size
 plt.plot(run_nr, total_steps, marker='o', linestyle='-', label='Total steps')  # Plot with markers and lines
-plt.title('Steps until all food is consumed', fontsize=14)  # Title for the plot
+plt.title('Steps until all food is consumed, with pheromones', fontsize=14)  # Title for the plot
 plt.xlabel('Run Number', fontsize=12)  # Label for the x-axis
 plt.ylabel('Total Steps', fontsize=12)  # Label for the y-axis
 plt.grid(True)  # Add a grid to the plot
@@ -256,11 +264,36 @@ plt.tight_layout()  # Adjust layout to prevent clipping
 
 plt.show()
 
+#extract data for plotting the leftover food after each 100 steps
+# Plot remaining food after each 100 steps for every run
+plt.figure(figsize=(10, 8))
+
+for run_data in food_left_all_runs:  # Iterate over food data for all runs
+    run_number = run_data['run']
+    food_data = run_data['food_left']
+
+    steps = [entry['steps'] for entry in food_data]
+    remaining_food = [entry['remaining_food'] for entry in food_data]
+
+    # Plot each run on the same graph
+    plt.plot(steps, remaining_food, marker='o', linestyle='-', label=f'Run {run_number}')
+
+# Configure the graph after all runs are plotted
+plt.title('Remaining Food After Each 100 Steps (All Runs), with pheromones', fontsize=16)
+plt.xlabel('Steps', fontsize=14)
+plt.ylabel('Remaining Food', fontsize=14)
+plt.grid(True)
+plt.legend(title='Runs', fontsize=12, loc='upper right')
+plt.tight_layout()
+
+# Show the combined plot
+plt.show()
+
 ####### ANIMATION #######        
 # Visualization for Arena and Ants 
 def plot_arena(ax, arena, ants_list):
     ax.clear()
-    ax.set_title("Ant Foraging Simulation")
+    ax.set_title("Ant Foraging Simulation, with pheromones")
     ax.set_xlim(0, arena.arena_size)
     ax.set_ylim(0, arena.arena_size)
     
@@ -319,3 +352,6 @@ if __name__ == "__main__":            # I changed this since the code wouldn't r
 
     # Plot final pheromone heatmap
     plot_pheromone_heatmap(arena)
+
+
+
