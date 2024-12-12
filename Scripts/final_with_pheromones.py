@@ -245,8 +245,26 @@ for result in results:
 df_pheromones = pd.DataFrame(results)           # dataframe for number of steps until all food is gone
 df_pheromones.to_csv('ant_with_pheromones.csv', index = False) # Index=F indicates that we don't want the index column as a column in the final dataset
 
-df_food_tracking = pd.DataFrame(food_left_all_runs)   # dataframe for remaing food after each 100 steps
-df_food_tracking.to_csv('food_tracking.csv', index=False)
+# Store the food tracking dataframe (currently stored as a dictionary, not compatible with R)
+flattened_data = []
+
+# Loop through each run and expand the nested structure
+for run_data in food_left_all_runs:
+    run_number = run_data['run']
+    for record in run_data['food_left']:
+        flattened_data.append({
+            'run': run_number,
+            'after_nr_steps': record['steps'],
+            'remaining_food': record['remaining_food']
+        })
+
+# Convert the flattened data into a DataFrame
+df_flattened = pd.DataFrame(flattened_data)
+# Save the resulting DataFrame to a CSV file
+df_flattened.to_csv('food_tracking_with_pheromones.csv', index=False)
+# Print the first few rows of the DataFrame for verification
+print(df_flattened.head())
+
 
 ####### GENERATE PLOT #######
 # Extract the data for plotting the amount of steps until all food was cleared
@@ -264,7 +282,7 @@ plt.tight_layout()  # Adjust layout to prevent clipping
 
 plt.show()
 
-#extract data for plotting the leftover food after each 100 steps
+# extract data for plotting the leftover food after each 100 steps
 # Plot remaining food after each 100 steps for every run
 plt.figure(figsize=(10, 8))
 
